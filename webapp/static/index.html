@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>SAP RPT-1 Benchmarking — Model Arena</title>
+  <meta name="description" content="Upload your CSV and instantly benchmark XGBoost, LightGBM, CatBoost and SAP RPT-1. Get a detailed model recommendation for your use case."/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/static/style.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ░░ HERO ░░ -->
+<header class="hero">
+  <div class="hero-glow"></div>
+  <div class="hero-content">
+    <div class="hero-badge">🔬 ML Model Arena</div>
+    <h1>Upload. Benchmark. <span class="gradient-text">Decide.</span></h1>
+    <p>Drop your CSV dataset and we'll automatically run <strong>XGBoost, LightGBM, CatBoost &amp; SAP RPT-1</strong> in parallel — then tell you exactly which model wins for your use case.</p>
+    <div class="hero-chips">
+      <span class="chip">5-Fold Cross-Validation</span>
+      <span class="chip">Auto Task Detection</span>
+      <span class="chip">Smart Recommendation</span>
+      <span class="chip">Max 5 MB CSV</span>
+    </div>
+  </div>
+</header>
+
+<main class="container">
+
+  <!-- ░░ UPLOAD SECTION ░░ -->
+  <section id="upload-section" class="section">
+    <div id="drop-zone" class="drop-zone" role="button" tabindex="0" aria-label="Upload CSV file">
+      <div class="drop-icon">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M12 16V4m0 0L8 8m4-4l4 4"/>
+          <path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/>
+        </svg>
+      </div>
+      <div class="drop-text">
+        <p class="drop-title">Drag &amp; drop your CSV file</p>
+        <p class="drop-sub">or <span class="drop-link">click to browse</span></p>
+      </div>
+      <input type="file" id="file-input" accept=".csv" hidden/>
+    </div>
+    <p id="upload-error" class="error-msg" hidden></p>
+  </section>
+
+  <!-- ░░ FILE PREVIEW + TARGET SELECTOR ░░ -->
+  <section id="preview-section" class="section" hidden>
+    <div class="preview-header">
+      <div class="preview-meta" id="preview-meta"></div>
+      <button id="change-file-btn" class="btn-ghost">↩ Change file</button>
+    </div>
+
+    <div class="target-picker">
+      <label for="target-select" class="picker-label">
+        <span class="picker-icon">🎯</span>
+        Select Target Column <span class="picker-hint">(the column you want to predict)</span>
+      </label>
+      <select id="target-select" class="target-select"></select>
+    </div>
+
+    <div class="preview-table-wrap">
+      <p class="table-label">Dataset Preview (first 5 rows)</p>
+      <div class="table-scroll">
+        <table id="preview-table" class="preview-table"></table>
+      </div>
+    </div>
+
+    <button id="run-btn" class="btn-primary">
+      <span class="btn-icon">⚡</span> Run Benchmark
+    </button>
+  </section>
+
+  <!-- ░░ LOADING ░░ -->
+  <section id="loading-section" class="section" hidden>
+    <div class="loader-card">
+      <div class="spinner-ring"></div>
+      <h2 class="loader-title">Running Benchmark</h2>
+      <p class="loader-sub">Training &amp; evaluating all 4 models across 5 folds…</p>
+      <div class="loader-steps" id="loader-steps">
+        <div class="step active" id="step-xgb">🟡 XGBoost</div>
+        <div class="step" id="step-lgb">🟢 LightGBM</div>
+        <div class="step" id="step-cat">🟣 CatBoost</div>
+        <div class="step" id="step-sap">🩷 SAP RPT-1</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ░░ RESULTS ░░ -->
+  <section id="results-section" class="section" hidden>
+
+    <!-- Dataset info bar -->
+    <div class="info-bar" id="info-bar"></div>
+
+    <!-- KPI cards -->
+    <h2 class="section-title">Summary <span class="title-accent">Statistics</span></h2>
+    <div class="kpi-grid" id="kpi-grid"></div>
+
+    <!-- Legend -->
+    <div class="legend" id="legend"></div>
+
+    <!-- Charts -->
+    <h2 class="section-title">Model <span class="title-accent">Comparison</span></h2>
+    <div class="charts-grid" id="charts-grid"></div>
+
+    <!-- Full table -->
+    <h2 class="section-title">Full <span class="title-accent">Metrics Table</span></h2>
+    <div class="table-card">
+      <div class="table-scroll">
+        <table id="results-table" class="results-table">
+          <thead id="results-thead"></thead>
+          <tbody id="results-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Recommendation -->
+    <h2 class="section-title">🏆 Model <span class="title-accent">Recommendation</span></h2>
+    <div id="recommendation-grid" class="rec-grid"></div>
+
+    <!-- Reset -->
+    <div class="reset-bar">
+      <button id="reset-btn" class="btn-ghost-lg">↩ Upload a New Dataset</button>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  SAP RPT-1 Benchmarking · Built with FastAPI &amp; Chart.js
+</footer>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

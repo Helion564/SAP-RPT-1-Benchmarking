@@ -137,6 +137,24 @@ cd code
 python -m analysis.aggregate_results
 ```
 
+## 🌐 Web Interface (New!)
+
+We've introduced a fully interactive web application to easily benchmark your custom datasets without touching the command line.
+
+**Features:**
+- **Drag & Drop CSV Upload**: Instantly test your own data.
+- **Auto-Task Detection**: Automatically detects whether your target is classification or regression.
+- **Parallel Benchmarking**: Runs XGBoost, LightGBM, CatBoost, and SAP RPT-1 via cross-validation.
+- **Smart Recommendations**: Evaluates models on speed, accuracy, and consistency to recommend the best option for production.
+
+**How to start the Web App:**
+```bash
+cd webapp
+pip install -r requirements.txt
+python -m uvicorn main:app --port 8000
+```
+Then open your browser and navigate to `http://localhost:8000`.
+
 ## 🏗️ Project Structure
 
 ```
