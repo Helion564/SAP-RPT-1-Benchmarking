@@ -14,7 +14,10 @@ from fastapi import FastAPI, File, UploadFile, Form, HTTPException
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
-from benchmark import run_benchmark, infer_task
+try:
+    from benchmark import run_benchmark, infer_task
+except ImportError:
+    from webapp.benchmark import run_benchmark, infer_task
 
 # ── Config ─────────────────────────────────────────────────────────────────────
 MAX_FILE_BYTES = int(os.getenv("MAX_FILE_SIZE_MB", "5")) * 1024 * 1024   # default 5 MB

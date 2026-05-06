@@ -313,7 +313,10 @@ def run_benchmark(df: pd.DataFrame, target_col: str) -> dict:
     -------
     dict with keys: dataset_info, task, results, ensemble_info, recommendation
     """
-    from ensemble import select_top_models, run_voting_ensemble, run_stacking_ensemble, SKLEARN_SAFE
+    try:
+        from ensemble import select_top_models, run_voting_ensemble, run_stacking_ensemble, SKLEARN_SAFE
+    except ImportError:
+        from webapp.ensemble import select_top_models, run_voting_ensemble, run_stacking_ensemble, SKLEARN_SAFE
 
     y_raw = df[target_col].copy()
     X     = df.drop(columns=[target_col]).copy()
