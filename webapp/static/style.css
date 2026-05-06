@@ -23,6 +23,7 @@
   --lgb:   #10b981;
   --cat:   #6366f1;
   --sap:   #ec4899;
+  --tabpfn: #3b82f6;
 }
 
 html { scroll-behavior: smooth; }
@@ -691,7 +692,134 @@ canvas { max-height: 260px; }
   padding-top: 8px;
 }
 
+/* ── Ensemble Analysis Cards ──────────────────────────────────────────────── */
+.ensemble-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
+  gap: 24px;
+  margin-bottom: 40px;
+}
+
+.ens-card {
+  background: linear-gradient(145deg, var(--surface), var(--surface2));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px;
+  position: relative;
+  overflow: hidden;
+  transition: transform .2s, border-color .2s;
+}
+
+.ens-card:hover { transform: translateY(-3px); border-color: var(--border2); }
+
+.ens-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--ens-color, var(--accent));
+}
+
+.ens-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+}
+
+.ens-emoji { font-size: 1.4rem; }
+
+.ens-name {
+  font-size: 1.2rem;
+  font-weight: 800;
+  flex: 1;
+}
+
+.ens-type-badge {
+  background: rgba(255,255,255,.06);
+  border: 1px solid var(--border2);
+  color: var(--text-dim);
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: .72rem;
+  font-weight: 700;
+}
+
+.ens-score {
+  margin-bottom: 6px;
+}
+
+.ens-score-val {
+  font-size: 2rem;
+  font-weight: 800;
+  color: var(--text);
+  font-family: 'Courier New', monospace;
+}
+
+.ens-score-label {
+  font-size: .8rem;
+  color: var(--text-muted);
+}
+
+.ens-gain {
+  margin-bottom: 12px;
+  font-size: .82rem;
+  font-weight: 600;
+}
+
+.gain-pos { color: #10b981; }
+.gain-neg { color: #f87171; }
+
+.ens-meta {
+  font-size: .8rem;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.ens-desc {
+  font-size: .82rem;
+  color: var(--text-dim);
+  line-height: 1.6;
+  margin-bottom: 16px;
+  border-top: 1px solid var(--border);
+  padding-top: 12px;
+}
+
+.ens-components-label {
+  font-size: .7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .07em;
+  color: var(--text-muted);
+  margin-bottom: 8px;
+}
+
+.ens-components {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.comp-pill {
+  padding: 4px 12px;
+  border: 1px solid;
+  border-radius: 999px;
+  font-size: .76rem;
+  font-weight: 600;
+  background: rgba(255,255,255,.04);
+}
+
+.ens-footer {
+  font-size: .75rem;
+  color: var(--text-muted);
+  border-top: 1px solid var(--border);
+  padding-top: 10px;
+}
+
 /* ── Footer ───────────────────────────────────────────────────────────────── */
+
 .footer {
   text-align: center;
   padding: 24px;

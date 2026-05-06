@@ -3,18 +3,26 @@
 
 // ── Constants ────────────────────────────────────────────────────────────────
 const MODEL_COLORS = {
-  "XGBoost":   "#f59e0b",
-  "LightGBM":  "#10b981",
-  "CatBoost":  "#6366f1",
-  "SAP-RPT1":  "#ec4899",
+  "XGBoost":           "#f59e0b",
+  "LightGBM":          "#10b981",
+  "CatBoost":          "#6366f1",
+  "TabPFN":            "#3b82f6",
+  "SAP-RPT1":          "#ec4899",
+  "Voting Ensemble":   "#fbbf24",
+  "Stacking Ensemble": "#a78bfa",
 };
 
 const MODEL_EMOJIS = {
-  "XGBoost":   "🟡",
-  "LightGBM":  "🟢",
-  "CatBoost":  "🟣",
-  "SAP-RPT1":  "🩷",
+  "XGBoost":           "🟡",
+  "LightGBM":          "🟢",
+  "CatBoost":          "🟣",
+  "TabPFN":            "🟦",
+  "SAP-RPT1":          "🩷",
+  "Voting Ensemble":   "🏆",
+  "Stacking Ensemble": "✨",
 };
+
+const ENSEMBLE_NAMES = ["Voting Ensemble", "Stacking Ensemble"];
 
 // ── DOM refs ─────────────────────────────────────────────────────────────────
 const dropZone       = document.getElementById("drop-zone");
@@ -139,17 +147,21 @@ runBtn.addEventListener("click", async () => {
   loadingSection.hidden = false;
 
   // Animate loader steps
-  const steps = ["step-xgb", "step-lgb", "step-cat", "step-sap"];
-  const delays = [0, 300, 600, 900];
-  steps.forEach((id, i) => {
-    setTimeout(() => {
-      steps.slice(0, i).forEach(prev => {
-        document.getElementById(prev).classList.remove("active");
-        document.getElementById(prev).classList.add("done");
-      });
-      document.getElementById(id).classList.add("active");
-    }, delays[i] * 10);  // fast tick animation (server is doing real work)
-  });
+  const steps = ["step-xgb", "step-lgb", "step-cat", "step-tabpfn", "step-sap", "step-vote", "step-stack"];
+  const delays = [0, 150, 300, 450, 600, 750, 900];
+  let stepIdx = 0;
+  const stepTimer = setInterval(() => {
+    if (stepIdx > 0) {
+      document.getElementById(steps[stepIdx - 1])?.classList.remove("active");
+      document.getElementById(steps[stepIdx - 1])?.classList.add("done");
+    }
+    if (stepIdx < steps.length) {
+      document.getElementById(steps[stepIdx])?.classList.add("active");
+      stepIdx++;
+    } else {
+      clearInterval(stepTimer);
+    }
+  }, 1400);
 
   const fd = new FormData();
   fd.append("file", currentFile);
@@ -159,15 +171,18 @@ runBtn.addEventListener("click", async () => {
     const res = await fetch("/benchmark", { method: "POST", body: fd });
     if (!res.ok) {
       const err = await res.json();
+      clearInterval(stepTimer);
       loadingSection.hidden = true;
       previewSection.hidden = false;
       showError(err.detail || "Benchmarking failed.");
       return;
     }
     const data = await res.json();
+    clearInterval(stepTimer);
     loadingSection.hidden = true;
     renderResults(data);
   } catch (e) {
+    clearInterval(stepTimer);
     loadingSection.hidden = true;
     previewSection.hidden = false;
     showError("Network error: " + e.message);
@@ -383,9 +398,80 @@ function renderResults(data) {
     recGrid.appendChild(card);
   });
 
+  // ── Ensemble Analysis section
+  renderEnsembleSection(data.ensemble_info || {}, results, recommendation, task);
+
   resultsSection.hidden = false;
   resultsSection.scrollIntoView({ behavior: "smooth", block: "start" });
 }
+
+// ── Ensemble Analysis renderer ────────────────────────────────────────────────
+function renderEnsembleSection(ensembleInfo, results, recommendation, task) {
+  const grid  = document.getElementById("ensemble-grid");
+  const title = document.getElementById("ensemble-section-title");
+  grid.innerHTML = "";
+
+  const entries = Object.entries(ensembleInfo).filter(([name]) => results[name] && !results[name].error);
+  if (!entries.length) {
+    title.hidden = true;
+    grid.hidden  = true;
+    return;
+  }
+  title.hidden = false;
+  grid.hidden  = false;
+
+  const primaryKey   = task === "classification" ? "roc_auc" : "r2";
+  const primaryLabel = task === "classification" ? "ROC-AUC" : "R²";
+
+  // Find the best individual model score (excluding ensembles) for gain %
+  const indivScores = Object.entries(results)
+    .filter(([n, v]) => !ENSEMBLE_NAMES.includes(n) && !v.error && v.mean[primaryKey] != null)
+    .map(([, v]) => v.mean[primaryKey]);
+  const bestIndivScore = indivScores.length ? Math.max(...indivScores) : 0;
+
+  entries.forEach(([name, info]) => {
+    const cv    = results[name];
+    const score = cv.mean[primaryKey] ?? 0;
+    const std   = cv.std[primaryKey]  ?? 0;
+    const ft    = cv.mean.fit_time    ?? 0;
+    const color = MODEL_COLORS[name] || "#888";
+    const gain  = bestIndivScore > 0 ? ((score - bestIndivScore) / bestIndivScore * 100) : 0;
+    const gainStr = gain >= 0
+      ? `<span class="gain-pos">▲ +${gain.toFixed(2)}% vs best individual</span>`
+      : `<span class="gain-neg">▼ ${gain.toFixed(2)}% vs best individual</span>`;
+
+    const componentPills = (info.components || []).map(c =>
+      `<span class="comp-pill" style="border-color:${MODEL_COLORS[c] || '#888'};color:${MODEL_COLORS[c] || '#888'}">${c}</span>`
+    ).join("");
+
+    const metaTag = info.meta_learner
+      ? `<div class="ens-meta">Meta-learner: <strong>${esc(info.meta_learner)}</strong></div>` : "";
+
+    const card = document.createElement("div");
+    card.className = "ens-card";
+    card.style.setProperty("--ens-color", color);
+    card.innerHTML = `
+      <div class="ens-header">
+        <span class="ens-emoji">${MODEL_EMOJIS[name] || "🧩"}</span>
+        <span class="ens-name" style="color:${color}">${name}</span>
+        <span class="ens-type-badge">${info.type === "voting" ? "Soft Voting" : "Stacking"}</span>
+      </div>
+      <div class="ens-score">
+        <span class="ens-score-val">${score.toFixed(4)}</span>
+        <span class="ens-score-label"> ${primaryLabel} ± ${std.toFixed(3)}</span>
+      </div>
+      <div class="ens-gain">${gainStr}</div>
+      ${metaTag}
+      <div class="ens-desc">${esc(info.description || "")}</div>
+      <div class="ens-components-label">Component Models</div>
+      <div class="ens-components">${componentPills}</div>
+      <div class="ens-footer">Avg fit time: ${ft.toFixed(3)}s per fold</div>
+    `;
+    grid.appendChild(card);
+  });
+}
+
+
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 function resetToUpload() {

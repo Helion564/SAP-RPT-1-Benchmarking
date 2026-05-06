@@ -24,10 +24,13 @@ RAND      = int(os.getenv("RANDOM_STATE", "42"))
 HF_TOKEN  = os.getenv("HUGGING_FACE_HUB_TOKEN", "")
 
 MODEL_COLORS = {
-    "XGBoost":        "#f59e0b",
-    "LightGBM":       "#10b981",
-    "CatBoost":       "#6366f1",
-    "SAP-RPT1":       "#ec4899",
+    "XGBoost":            "#f59e0b",
+    "LightGBM":           "#10b981",
+    "CatBoost":           "#6366f1",
+    "SAP-RPT1":           "#ec4899",
+    "TabPFN":             "#3b82f6",
+    "Voting Ensemble":    "#fbbf24",
+    "Stacking Ensemble":  "#a78bfa",
 }
 
 # ── Model builders ─────────────────────────────────────────────────────────────
@@ -47,6 +50,12 @@ def _cat(task):
     from catboost import CatBoostClassifier, CatBoostRegressor
     kw = dict(iterations=200, learning_rate=0.1, random_state=RAND, verbose=False)
     return CatBoostClassifier(**kw) if task == "classification" else CatBoostRegressor(**kw)
+
+def _tabpfn(task):
+    if task != "classification":
+        raise ValueError("TabPFN only supports classification tasks")
+    from models.tabpfn_wrapper import TabPFNWrapper
+    return TabPFNWrapper(task_type=task, random_state=RAND)
 
 
 class _SAPModel:
@@ -110,6 +119,7 @@ BUILDERS = {
     "XGBoost":  _xgb,
     "LightGBM": _lgb,
     "CatBoost": _cat,
+    "TabPFN":   _tabpfn,
     "SAP-RPT1": lambda task: _SAPModel(task),
 }
 
@@ -278,6 +288,10 @@ def _recommend(results: dict, task: str) -> dict:
     return {"scores": scores, "recommendations": recommendations, "primary_metric": p_metric_label}
 
 
+# ── Sklearn-safe builders (for Stacking) ─────────────────────────────────────
+SKLEARN_BUILDERS = {"XGBoost": _xgb, "LightGBM": _lgb, "CatBoost": _cat}
+
+
 # ── Public API ────────────────────────────────────────────────────────────────
 
 def infer_task(y: pd.Series) -> str:
@@ -297,8 +311,10 @@ def run_benchmark(df: pd.DataFrame, target_col: str) -> dict:
 
     Returns
     -------
-    dict with keys: dataset_info, task, results, recommendation
+    dict with keys: dataset_info, task, results, ensemble_info, recommendation
     """
+    from ensemble import select_top_models, run_voting_ensemble, run_stacking_ensemble, SKLEARN_SAFE
+
     y_raw = df[target_col].copy()
     X     = df.drop(columns=[target_col]).copy()
     y, _  = _encode_target(y_raw)
@@ -314,14 +330,14 @@ def run_benchmark(df: pd.DataFrame, target_col: str) -> dict:
         "columns":    list(X.columns),
     }
 
-    results = {}
+    # ── Step 1: individual model cross-validation ──────────────────────────────
+    results   = {}
     sap_label = None
     for name, builder in BUILDERS.items():
         try:
             cv = _run_cv(builder, X, y, task)
             results[name] = cv
             if name == "SAP-RPT1":
-                # capture real/sim label
                 try:
                     m = builder(task)
                     sap_label = m.label
@@ -333,12 +349,59 @@ def run_benchmark(df: pd.DataFrame, target_col: str) -> dict:
     if sap_label and "SAP-RPT1" in results and "error" not in results["SAP-RPT1"]:
         results["SAP-RPT1"]["label"] = sap_label
 
+    # ── Step 2: ensemble models ────────────────────────────────────────────────
+    ensemble_info = {}
+    top_pairs = select_top_models(results, BUILDERS, task, n=3)
+    top_names = [name for name, _ in top_pairs]
+
+    if len(top_pairs) >= 2:
+        # Voting ensemble — works with all model types
+        try:
+            vcv = run_voting_ensemble(top_pairs, X, y, task, _prep)
+            results["Voting Ensemble"] = vcv
+            ensemble_info["Voting Ensemble"] = {
+                "type":       "voting",
+                "strategy":   "soft",
+                "components": top_names,
+                "description": (
+                    f"Soft-voting average of the top {len(top_pairs)} models: "
+                    + ", ".join(top_names) + ". "
+                    "Probabilities are averaged per class before taking argmax."
+                ),
+            }
+        except Exception as e:
+            results["Voting Ensemble"] = {"error": str(e)}
+
+        # Stacking ensemble — sklearn-native models only as base learners
+        sklearn_pairs = [(n, b) for n, b in top_pairs if n in SKLEARN_SAFE]
+        if len(sklearn_pairs) >= 2:
+            try:
+                scv = run_stacking_ensemble(sklearn_pairs, X, y, task, _prep)
+                results["Stacking Ensemble"] = scv
+                sklearn_names = [n for n, _ in sklearn_pairs]
+                meta = "LogisticRegression" if task == "classification" else "Ridge"
+                ensemble_info["Stacking Ensemble"] = {
+                    "type":        "stacking",
+                    "meta_learner": meta,
+                    "components":  sklearn_names,
+                    "description": (
+                        f"Stacking with {meta} meta-learner on top of: "
+                        + ", ".join(sklearn_names) + ". "
+                        "Base models generate out-of-fold predictions that "
+                        "train the meta-learner."
+                    ),
+                }
+            except Exception as e:
+                results["Stacking Ensemble"] = {"error": str(e)}
+
+    # ── Step 3: recommendation ────────────────────────────────────────────────
     recommendation = _recommend(results, task)
 
     return {
         "dataset_info":   dataset_info,
         "task":           task,
         "results":        results,
+        "ensemble_info":  ensemble_info,
         "recommendation": recommendation,
         "n_folds":        N_FOLDS,
     }
