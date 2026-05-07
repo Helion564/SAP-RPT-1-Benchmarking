@@ -1,6 +1,38 @@
 /* app.js — Frontend logic for SAP RPT-1 Benchmarking Web App */
 "use strict";
 
+// ── Navbar: scroll shadow + hamburger menu ────────────────────────────────────
+(function initNavbar() {
+  const navbar = document.getElementById("navbar");
+  const burger = document.getElementById("nav-hamburger");
+  if (!navbar) return;
+
+  window.addEventListener("scroll", () => {
+    navbar.classList.toggle("scrolled", window.scrollY > 20);
+  }, { passive: true });
+
+  if (burger) {
+    burger.addEventListener("click", () => {
+      const open = navbar.classList.toggle("menu-open");
+      burger.setAttribute("aria-expanded", String(open));
+    });
+    // Close menu when any link is clicked
+    navbar.querySelectorAll(".nav-link").forEach(link => {
+      link.addEventListener("click", () => navbar.classList.remove("menu-open"));
+    });
+  }
+})();
+
+// ── Scroll-reveal: Intersection Observer ─────────────────────────────────────
+(function initReveal() {
+  const obs = new IntersectionObserver(
+    (entries) => entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add("visible"); obs.unobserve(e.target); } }),
+    { threshold: 0.12 }
+  );
+  document.querySelectorAll(".reveal").forEach(el => obs.observe(el));
+})();
+
+
 // ── Constants ────────────────────────────────────────────────────────────────
 const MODEL_COLORS = {
   "XGBoost":           "#f59e0b",

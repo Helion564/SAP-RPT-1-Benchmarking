@@ -3,57 +3,194 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
-  <title>SAP RPT-1 Benchmarking — Model Arena</title>
-  <meta name="description" content="Upload your CSV and instantly benchmark XGBoost, LightGBM, CatBoost and SAP RPT-1. Get a detailed model recommendation for your use case."/>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
+  <title>SAP RPT-1 · Model Arena — Upload, Benchmark, Decide</title>
+  <meta name="description" content="Upload your CSV and instantly benchmark XGBoost, LightGBM, CatBoost, TabPFN & SAP RPT-1 with SHAP explainability and an interactive What-If playground."/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet"/>
   <link rel="stylesheet" href="/static/style.css"/>
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.2/dist/chart.umd.min.js"></script>
 </head>
 <body>
 
+<!-- ░░ BACKGROUND ORBS ░░ -->
+<div class="orb orb-1" aria-hidden="true"></div>
+<div class="orb orb-2" aria-hidden="true"></div>
+<div class="orb orb-3" aria-hidden="true"></div>
+
+<!-- ░░ NAVBAR ░░ -->
+<nav class="navbar" id="navbar" role="navigation" aria-label="Main navigation">
+  <div class="nav-inner">
+    <a class="nav-logo" href="#hero">
+      <span class="nav-logo-icon">🔬</span>
+      <span class="nav-logo-text">Model<span class="nav-logo-accent">Arena</span></span>
+    </a>
+    <ul class="nav-links" role="list">
+      <li><a class="nav-link" href="#hero">Home</a></li>
+      <li><a class="nav-link" href="#how-it-works">How it Works</a></li>
+      <li><a class="nav-link" href="#tech-stack">Models</a></li>
+      <li><a class="nav-link" href="#upload-section">Arena</a></li>
+      <li><a class="nav-link nav-link-cta" href="#playground-container">🎮 Playground</a></li>
+    </ul>
+    <button class="nav-hamburger" id="nav-hamburger" aria-label="Toggle menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+</nav>
+
 <!-- ░░ HERO ░░ -->
-<header class="hero">
-  <div class="hero-glow"></div>
-  <div class="hero-content">
-    <div class="hero-badge">🔬 ML Model Arena</div>
-    <h1>Upload. Benchmark. <span class="gradient-text">Decide.</span></h1>
-    <p>Drop your CSV dataset and we'll automatically run <strong>XGBoost, LightGBM, CatBoost &amp; SAP RPT-1</strong> in parallel — then tell you exactly which model wins for your use case.</p>
+<header class="hero" id="hero">
+  <div class="hero-glow" aria-hidden="true"></div>
+  <div class="hero-content reveal">
+    <div class="hero-badge">🔬 ML Model Arena · Powered by SAP RPT-1</div>
+    <h1>Upload. Benchmark.<br><span class="gradient-text">Decide with Confidence.</span></h1>
+    <p>Drop your CSV and we automatically run <strong>5 foundation models</strong> in parallel—complete with ensemble stacking, SHAP explainability, and a live what-if prediction playground.</p>
     <div class="hero-chips">
-      <span class="chip">5-Fold Cross-Validation</span>
-      <span class="chip">Auto Task Detection</span>
-      <span class="chip">Smart Recommendation</span>
-      <span class="chip">Max 5 MB CSV</span>
+      <span class="chip">⚡ 5-Fold Cross-Validation</span>
+      <span class="chip">🤖 Auto Task Detection</span>
+      <span class="chip">🧩 Ensemble Engine</span>
+      <span class="chip">🔍 SHAP Explainability</span>
+      <span class="chip">🎮 Live Playground</span>
+    </div>
+    <div class="hero-cta-row">
+      <a class="btn-primary" href="#upload-section">
+        <span class="btn-icon">⚡</span> Start Benchmarking
+      </a>
+      <a class="btn-ghost-hero" href="#how-it-works">See How It Works ↓</a>
+    </div>
+    <div class="hero-stat-row">
+      <div class="hero-stat"><span class="hero-stat-num">5</span><span class="hero-stat-label">Foundation Models</span></div>
+      <div class="hero-stat-divider"></div>
+      <div class="hero-stat"><span class="hero-stat-num">2</span><span class="hero-stat-label">Ensemble Methods</span></div>
+      <div class="hero-stat-divider"></div>
+      <div class="hero-stat"><span class="hero-stat-num">SHAP</span><span class="hero-stat-label">Explainability</span></div>
+      <div class="hero-stat-divider"></div>
+      <div class="hero-stat"><span class="hero-stat-num">Live</span><span class="hero-stat-label">What-If Playground</span></div>
     </div>
   </div>
 </header>
 
-<main class="container">
+<!-- ░░ HOW IT WORKS ░░ -->
+<section id="how-it-works" class="landing-section">
+  <div class="landing-container">
+    <div class="landing-label reveal">Pipeline</div>
+    <h2 class="landing-title reveal">How it <span class="gradient-text">Works</span></h2>
+    <p class="landing-sub reveal">From raw CSV to actionable model recommendation in minutes — fully automated.</p>
+    <div class="pipeline-grid reveal">
+      <div class="pipeline-step">
+        <div class="pipeline-icon">📤</div>
+        <div class="pipeline-num">01</div>
+        <h3>Upload CSV</h3>
+        <p>Drag & drop your dataset. We auto-detect features, types, and whether it's a classification or regression task.</p>
+      </div>
+      <div class="pipeline-arrow" aria-hidden="true">→</div>
+      <div class="pipeline-step">
+        <div class="pipeline-icon">🏋️</div>
+        <div class="pipeline-num">02</div>
+        <h3>Parallel Training</h3>
+        <p>All 5 models run 5-fold cross-validation simultaneously. XGBoost, LightGBM, CatBoost, TabPFN & SAP RPT-1.</p>
+      </div>
+      <div class="pipeline-arrow" aria-hidden="true">→</div>
+      <div class="pipeline-step">
+        <div class="pipeline-icon">🧩</div>
+        <div class="pipeline-num">03</div>
+        <h3>Ensemble Engine</h3>
+        <p>The top 3 models are automatically combined via Soft Voting and Stacking to squeeze out extra performance.</p>
+      </div>
+      <div class="pipeline-arrow" aria-hidden="true">→</div>
+      <div class="pipeline-step">
+        <div class="pipeline-icon">🔍</div>
+        <div class="pipeline-num">04</div>
+        <h3>SHAP Analysis</h3>
+        <p>The winner is retrained on the full dataset. SHAP values reveal exactly which features matter most.</p>
+      </div>
+      <div class="pipeline-arrow" aria-hidden="true">→</div>
+      <div class="pipeline-step">
+        <div class="pipeline-icon">🎮</div>
+        <div class="pipeline-num">05</div>
+        <h3>Live Playground</h3>
+        <p>Tweak feature values in real-time and see your model's live prediction update instantly.</p>
+      </div>
+    </div>
+  </div>
+</section>
 
-  <!-- ░░ UPLOAD SECTION ░░ -->
-  <section id="upload-section" class="section">
-    <div id="drop-zone" class="drop-zone" role="button" tabindex="0" aria-label="Upload CSV file">
+<!-- ░░ TECH STACK ░░ -->
+<section id="tech-stack" class="landing-section landing-section-alt">
+  <div class="landing-container">
+    <div class="landing-label reveal">Models</div>
+    <h2 class="landing-title reveal">The <span class="gradient-text">Model Lineup</span></h2>
+    <p class="landing-sub reveal">Five best-in-class models — from gradient boosting giants to transformer-based foundation models.</p>
+    <div class="model-showcase reveal">
+      <div class="model-card" style="--mc:#f59e0b">
+        <div class="mc-glow"></div>
+        <div class="mc-icon">⚡</div>
+        <h3 class="mc-name">XGBoost</h3>
+        <p class="mc-desc">Industry-standard gradient boosting. Fast, regularized, and battle-tested on structured data.</p>
+        <div class="mc-tag">Gradient Boosting</div>
+      </div>
+      <div class="model-card" style="--mc:#10b981">
+        <div class="mc-glow"></div>
+        <div class="mc-icon">🌿</div>
+        <h3 class="mc-name">LightGBM</h3>
+        <p class="mc-desc">Leaf-wise tree growth with histogram-based algorithms. Blazing speed on large datasets.</p>
+        <div class="mc-tag">Gradient Boosting</div>
+      </div>
+      <div class="model-card" style="--mc:#6366f1">
+        <div class="mc-glow"></div>
+        <div class="mc-icon">🐱</div>
+        <h3 class="mc-name">CatBoost</h3>
+        <p class="mc-desc">Yandex's gradient booster with native categorical handling and symmetric trees.</p>
+        <div class="mc-tag">Gradient Boosting</div>
+      </div>
+      <div class="model-card" style="--mc:#3b82f6">
+        <div class="mc-glow"></div>
+        <div class="mc-icon">🧠</div>
+        <h3 class="mc-name">TabPFN</h3>
+        <p class="mc-desc">Meta-learned prior-fitted network. A foundation model for tabular data — no training needed.</p>
+        <div class="mc-tag">Foundation Model</div>
+      </div>
+      <div class="model-card" style="--mc:#ec4899">
+        <div class="mc-glow"></div>
+        <div class="mc-icon">🚀</div>
+        <h3 class="mc-name">SAP RPT-1</h3>
+        <p class="mc-desc">SAP's Relational Prior Transformer — a state-of-the-art enterprise-grade tabular foundation model.</p>
+        <div class="mc-tag">Foundation Model · SAP</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ░░ MAIN APP ░░ -->
+<main class="container" id="arena">
+
+  <!-- Upload Section -->
+  <section id="upload-section" class="section reveal">
+    <h2 class="section-title">🗂 Upload Your <span class="title-accent">Dataset</span></h2>
+    <div id="drop-zone" class="drop-zone" role="button" tabindex="0"
+         aria-label="Upload CSV file"
+         onkeydown="if(event.key==='Enter'||event.key===' ')this.click()">
       <div class="drop-icon">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
           <path d="M12 16V4m0 0L8 8m4-4l4 4"/>
           <path d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2"/>
         </svg>
       </div>
       <div class="drop-text">
         <p class="drop-title">Drag &amp; drop your CSV file</p>
-        <p class="drop-sub">or <span class="drop-link">click to browse</span></p>
+        <p class="drop-sub">or <span class="drop-link">click to browse</span> · Max 5 MB</p>
       </div>
       <input type="file" id="file-input" accept=".csv" hidden/>
     </div>
     <p id="upload-error" class="error-msg" hidden></p>
   </section>
 
-  <!-- ░░ FILE PREVIEW + TARGET SELECTOR ░░ -->
+  <!-- File Preview + Target Selector -->
   <section id="preview-section" class="section" hidden>
     <div class="preview-header">
       <div class="preview-meta" id="preview-meta"></div>
       <button id="change-file-btn" class="btn-ghost">↩ Change file</button>
     </div>
-
     <div class="target-picker">
       <label for="target-select" class="picker-label">
         <span class="picker-icon">🎯</span>
@@ -61,56 +198,57 @@
       </label>
       <select id="target-select" class="target-select"></select>
     </div>
-
     <div class="preview-table-wrap">
       <p class="table-label">Dataset Preview (first 5 rows)</p>
       <div class="table-scroll">
-        <table id="preview-table" class="preview-table"></table>
+        <table id="preview-table" class="preview-table">
+          <caption class="visually-hidden">Preview of the uploaded dataset</caption>
+        </table>
       </div>
     </div>
-
     <button id="run-btn" class="btn-primary">
       <span class="btn-icon">⚡</span> Run Benchmark
     </button>
   </section>
 
-  <!-- ░░ LOADING ░░ -->
+  <!-- Loading -->
   <section id="loading-section" class="section" hidden>
     <div class="loader-card">
       <div class="spinner-ring"></div>
       <h2 class="loader-title">Running Benchmark</h2>
-      <p class="loader-sub">Training &amp; evaluating all 4 models across 5 folds…</p>
+      <p class="loader-sub">Training &amp; evaluating all models across 5 folds…</p>
       <div class="loader-steps" id="loader-steps">
-        <div class="step active" id="step-xgb">🟡 XGBoost</div>
-        <div class="step" id="step-lgb">🟢 LightGBM</div>
-        <div class="step" id="step-cat">🟣 CatBoost</div>
-        <div class="step" id="step-tabpfn">🟦 TabPFN</div>
-        <div class="step" id="step-sap">🩷 SAP RPT-1</div>
+        <div class="step active" id="step-xgb">⚡ XGBoost</div>
+        <div class="step" id="step-lgb">🌿 LightGBM</div>
+        <div class="step" id="step-cat">🐱 CatBoost</div>
+        <div class="step" id="step-tabpfn">🧠 TabPFN</div>
+        <div class="step" id="step-sap">🚀 SAP RPT-1</div>
         <div class="step" id="step-vote">🏆 Voting Ensemble</div>
         <div class="step" id="step-stack">✨ Stacking Ensemble</div>
+        <div class="step" id="step-shap">🔍 SHAP Analysis</div>
       </div>
     </div>
   </section>
 
-  <!-- ░░ RESULTS ░░ -->
+  <!-- Results -->
   <section id="results-section" class="section" hidden>
 
     <!-- Dataset info bar -->
     <div class="info-bar" id="info-bar"></div>
 
     <!-- KPI cards -->
-    <h2 class="section-title">Summary <span class="title-accent">Statistics</span></h2>
+    <h2 class="section-title">📊 Summary <span class="title-accent">Statistics</span></h2>
     <div class="kpi-grid" id="kpi-grid"></div>
 
     <!-- Legend -->
     <div class="legend" id="legend"></div>
 
     <!-- Charts -->
-    <h2 class="section-title">Model <span class="title-accent">Comparison</span></h2>
+    <h2 class="section-title">📈 Model <span class="title-accent">Comparison</span></h2>
     <div class="charts-grid" id="charts-grid"></div>
 
     <!-- Full table -->
-    <h2 class="section-title">Full <span class="title-accent">Metrics Table</span></h2>
+    <h2 class="section-title">📋 Full <span class="title-accent">Metrics Table</span></h2>
     <div class="table-card">
       <div class="table-scroll">
         <table id="results-table" class="results-table">
@@ -134,7 +272,7 @@
       <div id="importance-info" class="importance-info"></div>
       <div class="chart-card importance-chart-card">
         <h4>Feature Importance <span id="importance-chart-sub" class="chart-sub"></span></h4>
-        <canvas id="importance-chart"></canvas>
+        <canvas id="importance-chart" aria-label="Feature importance bar chart"></canvas>
       </div>
     </div>
 
@@ -142,7 +280,7 @@
     <h2 class="section-title" id="playground-section-title">🎮 Interactive <span class="title-accent">Playground</span></h2>
     <div id="playground-container" class="playground-container">
       <div class="playground-header">
-        <p class="playground-desc">Adjust the sliders and inputs below to get a live prediction from the best-performing model.</p>
+        <p class="playground-desc">Adjust the inputs below to get a live prediction from the best-performing model. Changes update instantly — no page reload needed.</p>
         <div class="prediction-badge" id="prediction-badge">
           <div class="badge-label">Live Prediction</div>
           <div class="badge-value" id="badge-value">—</div>
@@ -154,7 +292,6 @@
     </div>
 
     <!-- Reset -->
-
     <div class="reset-bar">
       <button id="reset-btn" class="btn-ghost-lg">↩ Upload a New Dataset</button>
     </div>
@@ -162,8 +299,23 @@
 
 </main>
 
+<!-- ░░ FOOTER ░░ -->
 <footer class="footer">
-  SAP RPT-1 Benchmarking · Built with FastAPI &amp; Chart.js
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <span class="nav-logo-icon">🔬</span>
+      <span class="footer-brand-name">Model<strong>Arena</strong></span>
+    </div>
+    <p class="footer-tagline">Benchmarking foundation models for tabular data · Powered by SAP RPT-1, TabPFN & SHAP</p>
+    <div class="footer-links">
+      <a href="https://github.com/Helion564/SAP-RPT-1-Benchmarking" target="_blank" rel="noopener" class="footer-link">GitHub</a>
+      <span class="footer-sep">·</span>
+      <a href="https://huggingface.co/spaces/kaustubkreks/sap-rpt1-benchmarker" target="_blank" rel="noopener" class="footer-link">Hugging Face</a>
+      <span class="footer-sep">·</span>
+      <a href="#upload-section" class="footer-link">Launch App</a>
+    </div>
+    <p class="footer-copy">Built with FastAPI &amp; Chart.js · MIT License</p>
+  </div>
 </footer>
 
 <script src="/static/app.js"></script>
