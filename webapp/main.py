@@ -15,9 +15,9 @@ from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 
 try:
-    from benchmark import run_benchmark, infer_task
+    from benchmark import run_benchmark, infer_task, _INFERENCE_CACHE, prep_for_predict
 except ImportError:
-    from webapp.benchmark import run_benchmark, infer_task
+    from webapp.benchmark import run_benchmark, infer_task, _INFERENCE_CACHE, prep_for_predict
 
 # ── Config ─────────────────────────────────────────────────────────────────────
 MAX_FILE_BYTES = int(os.getenv("MAX_FILE_SIZE_MB", "5")) * 1024 * 1024   # default 5 MB
@@ -96,3 +96,45 @@ async def benchmark(
         raise HTTPException(500, f"Benchmarking failed: {e}")
 
     return JSONResponse(result)
+
+
+# ── /predict_single ────────────────────────────────────────────────────────────
+@app.post("/predict_single")
+async def predict_single(row: dict):
+    """
+    Accepts a JSON dict of feature values.
+    Returns live prediction from the best model trained during the last benchmark run.
+    """
+    cache = _INFERENCE_CACHE
+    if cache["model"] is None:
+        raise HTTPException(400, "No model trained yet. Run benchmarking first.")
+
+    try:
+        df = prep_for_predict(row, cache["columns"])
+        model = cache["model"]
+        task  = cache["task"]
+        le    = cache["le"]
+
+        if task == "classification":
+            pred_int   = int(model.predict(df)[0])
+            pred_label = le.inverse_transform([pred_int])[0] if le else str(pred_int)
+            try:
+                proba   = model.predict_proba(df)[0]
+                classes = list(le.classes_) if le else [str(i) for i in range(len(proba))]
+                probabilities = {str(c): float(p) for c, p in zip(classes, proba)}
+                confidence    = float(max(proba))
+            except Exception:
+                probabilities = {}
+                confidence    = None
+            return JSONResponse({
+                "prediction":    str(pred_label),
+                "confidence":    confidence,
+                "probabilities": probabilities,
+                "task":          "classification",
+            })
+        else:
+            pred = float(model.predict(df)[0])
+            return JSONResponse({"prediction": pred, "task": "regression"})
+
+    except Exception as e:
+        raise HTTPException(500, f"Prediction failed: {e}")

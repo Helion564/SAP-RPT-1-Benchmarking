@@ -401,9 +401,169 @@ function renderResults(data) {
   // ── Ensemble Analysis section
   renderEnsembleSection(data.ensemble_info || {}, results, recommendation, task);
 
+  // ── Feature Importance (SHAP)
+  renderFeatureImportance(data.feature_importance || {}, data.best_model_name || "", task);
+
+  // ── Interactive Playground
+  generatePlayground(data.dataset_info.col_dtypes || {}, task, data.best_model_name || "");
+
   resultsSection.hidden = false;
   resultsSection.scrollIntoView({ behavior: "smooth", block: "start" });
 }
+
+// ── Feature Importance (SHAP) ─────────────────────────────────────────────────
+let _importanceChart = null;
+
+function renderFeatureImportance(importance, modelName, task) {
+  const title     = document.getElementById("importance-section-title");
+  const container = document.getElementById("importance-container");
+  const sub       = document.getElementById("importance-chart-sub");
+
+  const entries = Object.entries(importance);
+  if (!entries.length) {
+    title.hidden     = true;
+    container.hidden = true;
+    return;
+  }
+  title.hidden     = false;
+  container.hidden = false;
+
+  const top     = entries.slice(0, 15);
+  const labels  = top.map(([k]) => k);
+  const values  = top.map(([, v]) => v);
+  const colors  = labels.map((_, i) => `hsl(${200 + (i / labels.length) * 140}, 70%, 58%)`);
+
+  sub.textContent = `· SHAP values from ${modelName} trained on full dataset`;
+
+  if (_importanceChart) _importanceChart.destroy();
+  _importanceChart = new Chart(document.getElementById("importance-chart"), {
+    type: "bar",
+    data: {
+      labels,
+      datasets: [{ data: values, backgroundColor: colors.map(c => c + "bb"),
+        borderColor: colors, borderWidth: 2, borderRadius: 6 }],
+    },
+    options: {
+      indexAxis: "y",
+      responsive: true,
+      plugins: { legend: { display: false },
+        tooltip: { callbacks: { label: ctx => `Importance: ${ctx.parsed.x.toFixed(5)}` } } },
+      scales: {
+        x: { min: 0, grid: { color: "#1e2a4a" }, ticks: { color: "#64748b", font: { size: 11 } } },
+        y: { grid: { display: false }, ticks: { color: "#94a3b8", font: { size: 12 } } },
+      },
+    },
+  });
+}
+
+// ── Interactive Playground ────────────────────────────────────────────────────
+function generatePlayground(colDtypes, task, bestModelName) {
+  const title     = document.getElementById("playground-section-title");
+  const container = document.getElementById("playground-container");
+  const form      = document.getElementById("playground-form");
+
+  const cols = Object.keys(colDtypes);
+  if (!cols.length) {
+    title.hidden     = true;
+    container.hidden = true;
+    return;
+  }
+  title.hidden     = false;
+  container.hidden = false;
+  form.innerHTML   = "";
+
+  cols.forEach(col => {
+    const info  = colDtypes[col];
+    const field = document.createElement("div");
+    field.className = "pg-field";
+
+    let input;
+    if (info.type === "numeric") {
+      input = document.createElement("input");
+      input.type  = "number";
+      input.step  = "any";
+      input.value = info.mean != null ? Number(info.mean).toFixed(4) : "0";
+      if (info.min != null) input.min = info.min;
+      if (info.max != null) input.max = info.max;
+    } else {
+      input = document.createElement("select");
+      (info.choices || []).forEach(c => {
+        const opt = document.createElement("option");
+        opt.value = c; opt.textContent = c;
+        input.appendChild(opt);
+      });
+    }
+    input.className    = "pg-input";
+    input.id           = `pg-${col}`;
+    input.dataset.col  = col;
+
+    field.innerHTML = `<label class="pg-label" for="pg-${esc(col)}">${esc(col)}</label>`;
+    field.appendChild(input);
+    form.appendChild(field);
+  });
+
+  const doPred = debounce(runPlaygroundPrediction, 350);
+  form.querySelectorAll(".pg-input").forEach(el => el.addEventListener("input", doPred));
+  runPlaygroundPrediction();
+}
+
+function debounce(fn, delay) {
+  let t;
+  return function (...args) { clearTimeout(t); t = setTimeout(() => fn.apply(this, args), delay); };
+}
+
+async function runPlaygroundPrediction() {
+  const form   = document.getElementById("playground-form");
+  const badge  = document.getElementById("badge-value");
+  const conf   = document.getElementById("badge-confidence");
+  const proba  = document.getElementById("proba-display");
+
+  const row = {};
+  form.querySelectorAll(".pg-input").forEach(el => {
+    const num = Number(el.value);
+    row[el.dataset.col] = Number.isNaN(num) ? el.value : num;
+  });
+
+  badge.textContent = "…";
+  badge.style.color = "#64748b";
+
+  try {
+    const res = await fetch("/predict_single", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(row),
+    });
+    if (!res.ok) { badge.textContent = "Error"; badge.style.color = "#f87171"; return; }
+
+    const r = await res.json();
+    if (r.task === "classification") {
+      badge.textContent = r.prediction;
+      badge.style.color = "#10b981";
+      conf.textContent  = r.confidence != null ? `${(r.confidence * 100).toFixed(1)}% confidence` : "";
+      if (r.probabilities) {
+        proba.innerHTML = Object.entries(r.probabilities)
+          .sort((a, b) => b[1] - a[1])
+          .map(([cls, p]) => `
+            <div class="proba-row">
+              <span class="proba-cls">${esc(String(cls))}</span>
+              <div class="proba-track"><div class="proba-fill" style="width:${(p * 100).toFixed(1)}%;background:${p > 0.5 ? "#10b981" : "#6366f1"}"></div></div>
+              <span class="proba-pct">${(p * 100).toFixed(1)}%</span>
+            </div>`).join("");
+      }
+    } else {
+      badge.textContent = typeof r.prediction === "number" ? r.prediction.toFixed(4) : String(r.prediction);
+      badge.style.color = "#f59e0b";
+      conf.textContent  = "Regression output";
+      proba.innerHTML   = "";
+    }
+  } catch (e) {
+    badge.textContent = "Error";
+    badge.style.color = "#f87171";
+    conf.textContent  = e.message;
+  }
+}
+
+
 
 // ── Ensemble Analysis renderer ────────────────────────────────────────────────
 function renderEnsembleSection(ensembleInfo, results, recommendation, task) {

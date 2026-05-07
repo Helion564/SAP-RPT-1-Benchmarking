@@ -10,3 +10,4 @@ pandas>=2.0.0
 numpy>=1.24.0
 tabpfn>=7.1.1
 huggingface_hub
+shap>=0.44.0

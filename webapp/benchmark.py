@@ -123,7 +123,27 @@ BUILDERS = {
     "SAP-RPT1": lambda task: _SAPModel(task),
 }
 
-# ── Preprocessing ──────────────────────────────────────────────────────────────
+# ── Global inference cache (populated by run_benchmark) ────────────────────────
+_INFERENCE_CACHE: dict = {
+    "model":          None,
+    "task":           None,
+    "columns":        [],
+    "le":             None,   # LabelEncoder for classification
+    "best_model_name": "",
+}
+
+def prep_for_predict(row_dict: dict, columns: list) -> pd.DataFrame:
+    """Preprocess a single-row dict for inference (mirrors _prep logic)."""
+    df = pd.DataFrame([{col: row_dict.get(col, 0) for col in columns}])
+    num = df.select_dtypes(include=[np.number]).columns
+    cat = df.select_dtypes(exclude=[np.number]).columns
+    if len(num):
+        df[num] = df[num].fillna(0.0)
+    for c in cat:
+        df[c] = LabelEncoder().fit_transform(df[c].fillna("__NA__").astype(str))
+    return df
+
+  # ── Preprocessing ──────────────────────────────────────────────────────────────
 
 def _prep(X: pd.DataFrame) -> pd.DataFrame:
     X = X.copy()
@@ -139,6 +159,48 @@ def _encode_target(y: pd.Series):
         le = LabelEncoder()
         return pd.Series(le.fit_transform(y.astype(str)), name=y.name), le
     return y, None
+
+def _col_dtypes(X: pd.DataFrame) -> dict:
+    """Return per-column type metadata for the playground UI."""
+    out = {}
+    for col in X.columns:
+        if X[col].dtype == object or str(X[col].dtype) == "category":
+            choices = [str(v) for v in X[col].dropna().unique().tolist()[:30]]
+            out[col] = {"type": "categorical", "choices": choices}
+        else:
+            out[col] = {
+                "type": "numeric",
+                "min":  float(X[col].min()),
+                "max":  float(X[col].max()),
+                "mean": float(X[col].mean()),
+            }
+    return out
+
+def _compute_feature_importance(model, X_prep: pd.DataFrame, model_name: str) -> dict:
+    """
+    Compute global feature importance sorted descending.
+    Tries SHAP TreeExplainer first; falls back to built-in feature_importances_.
+    """
+    if model_name in ("XGBoost", "LightGBM", "CatBoost"):
+        try:
+            import shap
+            explainer = shap.TreeExplainer(model)
+            sample = X_prep.iloc[:min(300, len(X_prep))]
+            sv = explainer.shap_values(sample)
+            if isinstance(sv, list):   # multi-class
+                imp = np.mean([np.abs(v).mean(axis=0) for v in sv], axis=0)
+            else:
+                imp = np.abs(sv).mean(axis=0)
+            pairs = sorted(zip(X_prep.columns, imp), key=lambda x: x[1], reverse=True)
+            return {k: float(v) for k, v in pairs}
+        except Exception:
+            pass
+    if hasattr(model, "feature_importances_"):
+        pairs = sorted(zip(X_prep.columns, model.feature_importances_),
+                       key=lambda x: x[1], reverse=True)
+        return {k: float(v) for k, v in pairs}
+    return {}
+
 
 # ── Metrics ───────────────────────────────────────────────────────────────────
 
@@ -320,7 +382,7 @@ def run_benchmark(df: pd.DataFrame, target_col: str) -> dict:
 
     y_raw = df[target_col].copy()
     X     = df.drop(columns=[target_col]).copy()
-    y, _  = _encode_target(y_raw)
+    y, le = _encode_target(y_raw)
 
     task = infer_task(y_raw)
 
@@ -331,6 +393,7 @@ def run_benchmark(df: pd.DataFrame, target_col: str) -> dict:
         "task":       task,
         "n_classes":  int(y.nunique()) if task == "classification" else None,
         "columns":    list(X.columns),
+        "col_dtypes": _col_dtypes(X),
     }
 
     # ── Step 1: individual model cross-validation ──────────────────────────────
@@ -397,14 +460,45 @@ def run_benchmark(df: pd.DataFrame, target_col: str) -> dict:
             except Exception as e:
                 results["Stacking Ensemble"] = {"error": str(e)}
 
-    # ── Step 3: recommendation ────────────────────────────────────────────────
+    # ── Step 3: feature importance + final model ──────────────────────────────
+    SKIP_FOR_IMPORTANCE = {"Voting Ensemble", "Stacking Ensemble"}
+    primary_key = "roc_auc" if task == "classification" else "r2"
+    best_indiv = max(
+        ((n, r) for n, r in results.items()
+         if n not in SKIP_FOR_IMPORTANCE and "error" not in r),
+        key=lambda x: x[1]["mean"].get(primary_key, 0),
+        default=(None, None),
+    )
+    feature_importance = {}
+    best_model_name = ""
+    if best_indiv[0] is not None:
+        best_model_name = best_indiv[0]
+        try:
+            final_model = BUILDERS[best_model_name](task)
+            X_prep_full = _prep(X)
+            final_model.fit(X_prep_full, y)
+            feature_importance = _compute_feature_importance(final_model, X_prep_full, best_model_name)
+            # Store for /predict_single endpoint
+            _INFERENCE_CACHE.update({
+                "model":           final_model,
+                "task":            task,
+                "columns":         list(X.columns),
+                "le":              le,
+                "best_model_name": best_model_name,
+            })
+        except Exception:
+            pass
+
+    # ── Step 4: recommendation ────────────────────────────────────────────────
     recommendation = _recommend(results, task)
 
     return {
-        "dataset_info":   dataset_info,
-        "task":           task,
-        "results":        results,
-        "ensemble_info":  ensemble_info,
-        "recommendation": recommendation,
-        "n_folds":        N_FOLDS,
+        "dataset_info":      dataset_info,
+        "task":              task,
+        "results":           results,
+        "ensemble_info":     ensemble_info,
+        "recommendation":    recommendation,
+        "n_folds":           N_FOLDS,
+        "feature_importance":feature_importance,
+        "best_model_name":   best_model_name,
     }

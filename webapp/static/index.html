@@ -128,7 +128,33 @@
     <h2 class="section-title" id="ensemble-section-title">🧩 Ensemble <span class="title-accent">Analysis</span></h2>
     <div id="ensemble-grid" class="ensemble-grid"></div>
 
+    <!-- AI Explainability -->
+    <h2 class="section-title" id="importance-section-title">🔍 AI <span class="title-accent">Explainability</span></h2>
+    <div id="importance-container" class="importance-container">
+      <div id="importance-info" class="importance-info"></div>
+      <div class="chart-card importance-chart-card">
+        <h4>Feature Importance <span id="importance-chart-sub" class="chart-sub"></span></h4>
+        <canvas id="importance-chart"></canvas>
+      </div>
+    </div>
+
+    <!-- Interactive Playground -->
+    <h2 class="section-title" id="playground-section-title">🎮 Interactive <span class="title-accent">Playground</span></h2>
+    <div id="playground-container" class="playground-container">
+      <div class="playground-header">
+        <p class="playground-desc">Adjust the sliders and inputs below to get a live prediction from the best-performing model.</p>
+        <div class="prediction-badge" id="prediction-badge">
+          <div class="badge-label">Live Prediction</div>
+          <div class="badge-value" id="badge-value">—</div>
+          <div class="badge-confidence" id="badge-confidence"></div>
+        </div>
+      </div>
+      <form id="playground-form" class="playground-grid" autocomplete="off"></form>
+      <div id="proba-display" class="proba-display"></div>
+    </div>
+
     <!-- Reset -->
+
     <div class="reset-bar">
       <button id="reset-btn" class="btn-ghost-lg">↩ Upload a New Dataset</button>
     </div>

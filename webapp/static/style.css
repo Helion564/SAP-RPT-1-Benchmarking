@@ -818,7 +818,159 @@ canvas { max-height: 260px; }
   padding-top: 10px;
 }
 
+/* ── Feature Importance ───────────────────────────────────────────────────── */
+.importance-container { margin-bottom: 40px; }
+
+.importance-chart-card { max-height: 520px; }
+
+.importance-chart-card canvas { max-height: 460px; }
+
+.importance-info {
+  font-size: .82rem;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+/* ── Interactive Playground ──────────────────────────────────────────────── */
+.playground-container {
+  background: linear-gradient(145deg, var(--surface), var(--surface2));
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 28px;
+  margin-bottom: 40px;
+}
+
+.playground-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 24px;
+  margin-bottom: 28px;
+  flex-wrap: wrap;
+}
+
+.playground-desc {
+  flex: 1;
+  color: var(--text-dim);
+  font-size: .9rem;
+  line-height: 1.6;
+  min-width: 200px;
+}
+
+.prediction-badge {
+  background: var(--surface3);
+  border: 2px solid var(--border2);
+  border-radius: 16px;
+  padding: 16px 24px;
+  min-width: 200px;
+  text-align: center;
+  transition: border-color .3s;
+}
+
+.badge-label {
+  font-size: .7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text-muted);
+  margin-bottom: 6px;
+}
+
+.badge-value {
+  font-size: 2rem;
+  font-weight: 900;
+  font-family: 'Courier New', monospace;
+  letter-spacing: -.02em;
+  transition: color .25s, transform .15s;
+}
+
+.badge-value:not(:empty) { animation: badge-pop .2s ease; }
+
+@keyframes badge-pop {
+  0%   { transform: scale(.9); }
+  60%  { transform: scale(1.06); }
+  100% { transform: scale(1); }
+}
+
+.badge-confidence {
+  font-size: .76rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.playground-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 14px;
+  margin-bottom: 24px;
+}
+
+.pg-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.pg-label {
+  font-size: .72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.pg-input {
+  background: var(--surface3);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: .9rem;
+  padding: 8px 10px;
+  outline: none;
+  transition: border-color .2s, background .2s;
+  width: 100%;
+}
+
+.pg-input:focus {
+  border-color: var(--accent);
+  background: rgba(99, 102, 241, .08);
+}
+
+/* Probability bars */
+.proba-display {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.proba-row {
+  display: grid;
+  grid-template-columns: 100px 1fr 52px;
+  align-items: center;
+  gap: 10px;
+}
+
+.proba-cls  { font-size: .82rem; font-weight: 600; color: var(--text); }
+.proba-pct  { font-size: .8rem; color: var(--text-muted); text-align: right; font-family: monospace; }
+
+.proba-track {
+  background: var(--surface3);
+  border-radius: 999px;
+  height: 8px;
+  overflow: hidden;
+}
+
+.proba-fill {
+  height: 100%;
+  border-radius: 999px;
+  transition: width .35s cubic-bezier(.4, 0, .2, 1);
+}
+
 /* ── Footer ───────────────────────────────────────────────────────────────── */
+
 
 .footer {
   text-align: center;
